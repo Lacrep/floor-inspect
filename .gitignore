@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# colcon
+build/
+install/
+log/
+
+# ผลที่โปรแกรมสร้างตอนรัน — สร้างใหม่ได้
+floor_reports/
+floor_inspect_demo/
+*.log
+
+.DS_Store
