@@ -620,7 +620,7 @@ python3 -m floor_inspect.cli replay ~/floor_reports/20260824_143000_aisle-A --po
 ## รันทดสอบ
 
 ```bash
-cd ~/floor-inspect && python3 -m pytest test/ -v      # 44 ข้อ ~2 นาที
+cd ~/floor-inspect && python3 -m pytest test/ -v      # 48 ข้อ ~2 นาที
 ```
 
 ### ตัวจำลองต้องไม่ "เก่งเกินกล้องจริง"

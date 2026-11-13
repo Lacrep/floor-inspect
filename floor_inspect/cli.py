@@ -156,6 +156,61 @@ def cmd_replay(args):
     return 0
 
 
+def cmd_road(args):
+    """วิเคราะห์เฟรมถนนจริงจากชุดข้อมูล stereo (point cloud เมตริก) — ไม่ต้องมีกล้อง"""
+    import cv2
+    from floor_inspect import (surface_core as sc, risk as rk, render as rd, report as rp,
+                               stereo_dataset as sd)
+    P = sd.load_xyz_mat(args.mat)
+    depth, K = sd.depth_and_intrinsics(P)
+    print(f'ภาพ {depth.shape[1]}x{depth.shape[0]} · intrinsics ที่ถอดได้ fx={K[0]:.1f} fy={K[1]:.1f} '
+          f'cx={K[2]:.1f} cy={K[3]:.1f} · ระยะกลาง {np.median(depth[depth > 0]) / 1000:.3f} m')
+    p = sc.SurfaceParams(cell=args.cell_mm / 1000.0, pixel_stride=args.stride)
+    res = sc.analyse_depth(depth, K, p)
+    if not res.ok:
+        print('วิเคราะห์ไม่สำเร็จ:', res.note)
+        return 1
+    spec = rk.PRESETS[args.amr]
+    rk.assess_all(res.defects, spec)
+    grid = rk.risk_grid(res.dem, res.dev_local_mm, res.steps_mm, res.slope_deg, spec,
+                        res.noise_mm, rough_mm=res.rough_mm)
+    print(f'กล้องสูง {res.plane.cam_height_m:.3f} m · rms ระนาบ {res.plane.rms_mm:.2f} mm · '
+          f'พื้นที่ {res.dem.area_m2:.3f} m² · เล็กสุดที่ยืนยันได้ {res.detectable_mm:.2f} mm · '
+          f'พบ {len(res.defects)} จุด')
+    for d in sorted(res.defects, key=lambda z: -abs(z.peak_mm)):
+        print(f'   {d.kind:9s} ({d.x:+.3f},{d.y:+.3f}) {d.peak_mm:+6.1f} mm '
+              f'{d.length_m * 1000:.0f}x{d.width_m * 1000:.0f} mm  snr {d.snr:.0f}  {d.risk}')
+
+    out = os.path.abspath(args.out)
+    os.makedirs(out, exist_ok=True)
+    color = cv2.imread(args.rgb) if args.rgb else np.full((*depth.shape, 3), 128, np.uint8)
+    if color is None or color.shape[:2] != depth.shape:
+        print('ภาพสีไม่ตรงขนาดกับ depth — ใช้พื้นเทาแทน')
+        color = np.full((*depth.shape, 3), 128, np.uint8)
+    ov_risk = rd.overlay_on_color(color, res, grid, 'risk', defects=res.defects, K=K)
+    ov_dev = rd.overlay_on_color(color, res, res.dev_local_mm, 'dev', defects=res.defects, K=K)
+    _write(os.path.join(out, 'photo.jpg'), color)
+    _write(os.path.join(out, 'overlay_risk.jpg'), ov_risk)
+    _write(os.path.join(out, 'overlay_dev.jpg'), ov_dev)
+    _write(os.path.join(out, 'topdown_dev.png'),
+           rd.topdown_map(res, 'dev', defects=res.defects, risk_score=grid))
+    if args.label:
+        lab = cv2.imread(args.label, cv2.IMREAD_GRAYSCALE)
+        ag = sd.label_agreement(lab, depth, K, res, grid)
+        cs, _ = cv2.findContours((lab > 0).astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        ov_l = ov_dev.copy()
+        cv2.drawContours(ov_l, cs, -1, (0, 255, 255), 4)
+        _write(os.path.join(out, 'overlay_dev_label.jpg'), ov_l)
+        dp = ag['depressed']
+        print(f'เทียบกับป้ายที่คนระบาย (เซลล์ที่ต่ำกว่าฐาน ≥ 4 mm): recall {dp["recall"]:.2f} · '
+              f'precision {dp["precision"]:.2f} · IoU {dp["iou"]:.2f} · '
+              f'ป้ายอยู่ในพื้นที่สำรวจ {ag["label_px_in_survey"]}/{ag["label_px_total"]} px')
+    with open(os.path.join(out, 'report.md'), 'w') as f:
+        f.write(rp.markdown_report(res, spec, grid, title=f'รายงานผลตรวจพื้น (ถนนจริง: {os.path.basename(args.mat)})'))
+    print('ไฟล์ผลลัพธ์อยู่ที่:', out)
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='floor_inspect',
                                  description='ตรวจความไม่เรียบของพื้นสำหรับ AMR ด้วย D455')
@@ -171,6 +226,16 @@ def main(argv=None):
                                                             'amr_heavy', 'agv_tugger'])
     d.add_argument('--out', default='./floor_inspect_demo')
     d.set_defaults(func=cmd_demo)
+
+    rd_ = sub.add_parser('road', help='วิเคราะห์เฟรมถนนจริงจากชุดข้อมูล stereo pothole (point cloud .mat)')
+    rd_.add_argument('--mat', required=True, help='ptcloud/NN.mat (ตัวแปร xyzPoints หน่วย mm)')
+    rd_.add_argument('--rgb', default=None, help='rgb/NN.png (ไม่ใส่ก็ได้)')
+    rd_.add_argument('--label', default=None, help='label/NN.png หน้ากากหลุมที่คนระบาย (ไว้เทียบผล)')
+    rd_.add_argument('--cell-mm', type=float, default=4.0, dest='cell_mm')
+    rd_.add_argument('--stride', type=int, default=2, help='ย่อ depth ก่อนวิเคราะห์ (2 = เร็วขึ้นเท่าตัว)')
+    rd_.add_argument('--amr', default='amr_generic', choices=['amr_generic', 'amr_small', 'amr_heavy', 'agv_tugger'])
+    rd_.add_argument('--out', default='./floor_inspect_road')
+    rd_.set_defaults(func=cmd_road)
 
     b = sub.add_parser('bench', help='ตารางความสามารถ: ตรวจเจออะไรได้ที่ระยะไหน')
     b.add_argument('--heights', default='0.4,0.6,0.8')
