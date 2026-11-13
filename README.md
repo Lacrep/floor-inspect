@@ -202,6 +202,54 @@ python3 -m floor_inspect.cli road --mat 33.mat --rgb 33.png --label 33.png --out
 - **ไม่ใช่ข้อมูลของ D455:** กล้องอยู่สูง 0.37–0.48 m มองเกือบตรงลง ความละเอียด ~1720×1030 เห็นพื้นที่ราว 0.16–0.44 m² ต่อเฟรม หลุมกว้าง ~6–32 cm
   แสดงว่าอัลกอริทึมใช้ได้กับเรขาคณิตพื้นถนนจริง แต่ **ยังไม่ได้ทดสอบ D455 บนถนนจริง**
 
+
+<details>
+<summary><b>ดูภาพรายเฟรมของถนนจริง (เฟรม B–F)</b> — ภาพถ่าย · ผลตรวจทับเส้นป้าย · แผนที่มองจากบน</summary>
+
+**B · dataset2/26 — หลุมเดี่ยว: หลุม −14.3 mm (132×152 mm)**
+
+<table><tr>
+<td width="33%"><img src="docs/images/road_dataset2_26_photo.jpg" alt="ภาพถ่ายจริง เฟรม B"><br><sub>ภาพถ่ายจริง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_26_overlay_dev_label.jpg" alt="ผลตรวจทับเส้นป้าย เฟรม B"><br><sub>ผลตรวจ (น้ำเงิน) + เส้นป้ายสีเหลือง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_26_topdown_dev.png" alt="แผนที่มองจากบน เฟรม B"><br><sub>แผนที่ค่าเบี่ยงเบนมองจากบน</sub></td>
+</tr></table>
+
+**C · dataset2/33 — หลายหลุม: ระบบนับ 2 จุด (−11.6 / −10.4 mm)**
+
+<table><tr>
+<td width="33%"><img src="docs/images/road_dataset2_33_photo.jpg" alt="ภาพถ่ายจริง เฟรม C"><br><sub>ภาพถ่ายจริง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_33_overlay_dev_label.jpg" alt="ผลตรวจทับเส้นป้าย เฟรม C"><br><sub>ผลตรวจ (น้ำเงิน) + เส้นป้ายสีเหลือง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_33_topdown_dev.png" alt="แผนที่มองจากบน เฟรม C"><br><sub>แผนที่ค่าเบี่ยงเบนมองจากบน</sub></td>
+</tr></table>
+
+**D · dataset2/30 — หลุม −14.1 mm + รอยบุ๋มเล็ก 2 จุด (+4.7 / +4.3 mm)**
+
+<table><tr>
+<td width="33%"><img src="docs/images/road_dataset2_30_photo.jpg" alt="ภาพถ่ายจริง เฟรม D"><br><sub>ภาพถ่ายจริง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_30_overlay_dev_label.jpg" alt="ผลตรวจทับเส้นป้าย เฟรม D"><br><sub>ผลตรวจ (น้ำเงิน) + เส้นป้ายสีเหลือง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_30_topdown_dev.png" alt="แผนที่มองจากบน เฟรม D"><br><sub>แผนที่ค่าเบี่ยงเบนมองจากบน</sub></td>
+</tr></table>
+
+**E · dataset2/40 — หลุมยาวตามแนวร่อง −10.5 mm (144×320 mm)**
+
+<table><tr>
+<td width="33%"><img src="docs/images/road_dataset2_40_photo.jpg" alt="ภาพถ่ายจริง เฟรม E"><br><sub>ภาพถ่ายจริง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_40_overlay_dev_label.jpg" alt="ผลตรวจทับเส้นป้าย เฟรม E"><br><sub>ผลตรวจ (น้ำเงิน) + เส้นป้ายสีเหลือง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset2_40_topdown_dev.png" alt="แผนที่มองจากบน เฟรม E"><br><sub>แผนที่ค่าเบี่ยงเบนมองจากบน</sub></td>
+</tr></table>
+
+**F · dataset1/21 — หลุม −40.6 mm (84×92 mm) ติดขอบภาพ**
+
+<table><tr>
+<td width="33%"><img src="docs/images/road_dataset1_21_photo.jpg" alt="ภาพถ่ายจริง เฟรม F"><br><sub>ภาพถ่ายจริง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset1_21_overlay_dev_label.jpg" alt="ผลตรวจทับเส้นป้าย เฟรม F"><br><sub>ผลตรวจ (น้ำเงิน) + เส้นป้ายสีเหลือง</sub></td>
+<td width="33%"><img src="docs/images/road_dataset1_21_topdown_dev.png" alt="แผนที่มองจากบน เฟรม F"><br><sub>แผนที่ค่าเบี่ยงเบนมองจากบน</sub></td>
+</tr></table>
+
+overlay แบบ *ความเสี่ยง* ของทุกเฟรมอยู่ใน [`docs/images/`](docs/images) (`road_<เฟรม>_overlay_risk.jpg`)
+
+</details>
+
 ### ฉากจำลองพื้นขรุขระ — ยางมะตอยและคอนกรีตสึก (มีเฉลยรู้ค่าจริง)
 
 ฉาก `asphalt` และ `worn` สร้างพื้นที่ **ผิวหยาบเอง** (ไม่ใช่พื้นเรียบ) แล้วเจาะหลุมหลายขนาดลงไป — ไว้ดูว่าเกณฑ์ที่ปรับตามเนื้อผิว
