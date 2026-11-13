@@ -162,7 +162,8 @@ def main(argv=None):
     sub = ap.add_subparsers(dest='cmd', required=True)
 
     d = sub.add_parser('demo', help='รันกับสนามทดสอบจำลอง (ไม่ต้องมีกล้อง)')
-    d.add_argument('--scene', default='warehouse', choices=['flat', 'targets', 'warehouse'])
+    from floor_inspect import synth as _synth
+    d.add_argument('--scene', default='warehouse', choices=list(_synth.SCENES))
     d.add_argument('--height', type=float, default=0.6)
     d.add_argument('--pitch', type=float, default=45.0)
     d.add_argument('--cell-mm', type=float, default=10.0, dest='cell_mm')

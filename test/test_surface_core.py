@@ -636,3 +636,31 @@ def test_real_box_is_one_blob_not_split_into_obstacle_plus_bump():
     near = _box_defect(res)
     assert len(near) == 1, ('กล่องใบเดียวถูกซอยเป็น '
                             + ', '.join(f'{d.kind} {d.peak_mm:.0f}mm' for d in near))
+
+
+@pytest.mark.parametrize('scene_name, max_err_mm', [('asphalt', 4.0), ('worn', 4.0)])
+def test_rough_surface_potholes_found_without_ghosts(scene_name, max_err_mm, cam):
+    """พื้นขรุขระที่มีหลุมจริง: ต้องเจอทุกหลุม/เนิน และห้ามกุ defect นอกเฉลย
+
+    ยางมะตอยหยาบ ~2 mm และคอนกรีตสึก ~1 mm — เกณฑ์ที่ปรับตามเนื้อผิวต้องไม่ท่วมด้วยจุดปลอม
+    และไม่ฆ่าหลุมจริงทิ้ง วัดจริง: คลาดสูงสุด ~3.4 mm (หลุมตื้นวัดต่ำกว่าจริง ไม่ใช่สูงกว่า)
+    """
+    scene = synth.SCENES[scene_name]()
+    depth, K, _ = synth.render_depth(scene, cam)
+    res = sc.analyse_depth(depth, K, sc.SurfaceParams())
+    assert res.ok, res.note
+    for ft in scene.features:
+        near = min((d for d in res.defects if d.kind != 'missing'),
+                   key=lambda d: np.hypot(d.x - ft.x, d.y - ft.y), default=None)
+        assert near is not None, f'{ft.label()} หาไม่เจอเลย'
+        assert np.hypot(near.x - ft.x, near.y - ft.y) < 0.12, f'{ft.label()} หาไม่เจอ'
+        assert near.kind == ft.kind, f'{ft.label()} ถูกจัดเป็น {near.kind}'
+        assert abs(near.peak_mm - ft.depth_mm) < max_err_mm, \
+            f'{ft.label()} วัดได้ {near.peak_mm:+.1f} mm'
+    ghosts = [d for d in res.defects if d.kind != 'missing' and
+              all(np.hypot(d.x - f.x, d.y - f.y) >= 0.12 for f in scene.features)]
+    assert not ghosts, f'พบจุดที่ไม่มีในเฉลย: {[(d.kind, round(d.x, 2), round(d.y, 2)) for d in ghosts]}'
+    # ข้อจำกัดที่รู้อยู่: หลุมขอบชันทำให้ฐานเฉพาะที่ "ล้น" ที่ขอบ เกิดเนินปลอม ~10 mm ติดขอบหลุมได้ 1 จุด
+    # (asphalt: เนิน +10.5 mm ที่ห่างศูนย์กลางหลุม 0.10 m) — ยอมรับได้ไม่เกิน 1 จุดต่อฉาก
+    n_real = sum(d.kind != 'missing' for d in res.defects)
+    assert n_real <= len(scene.features) + 1, f'defect เกินเฉลยมากกว่า 1 จุด ({n_real} vs {len(scene.features)})'

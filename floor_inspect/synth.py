@@ -70,6 +70,7 @@ class FloorScene:
     roughness_mm: float = 0.0          # ความหยาบผิวแบบสุ่ม (RMS) เช่น พื้นปูน 0.3-0.8 mm
     roughness_scale_m: float = 0.05
     seed: int = 0
+    base_bgr: Tuple[int, int, int] = (150, 148, 143)   # สีพื้นของภาพสีจำลอง (ปูนเทา)
 
     def height_mm(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """ความสูงพื้น (mm) ที่พิกัด (x, y) — เวกเตอร์ไรซ์เต็มรูปแบบ"""
@@ -258,8 +259,9 @@ def render_depth(scene: FloorScene, cam: CameraSpec, add_noise: bool = True,
 
 
 def render_color(scene: FloorScene, cam: CameraSpec, info: dict,
-                 base_bgr=(150, 148, 143)) -> np.ndarray:
+                 base_bgr=None) -> np.ndarray:
     """ภาพสีคู่กัน (พื้นปูนเทา + เงาตามความชัน) — ไว้ทดสอบ overlay แบบไม่ต้องมีกล้อง"""
+    base_bgr = scene.base_bgr if base_bgr is None else base_bgr
     H, W = cam.height, cam.width
     x, y, valid = info['x'], info['y'], info['valid']
     img = np.zeros((H, W, 3), np.uint8)
@@ -307,8 +309,32 @@ def scene_warehouse() -> FloorScene:
     ], roughness_mm=0.5)
 
 
+def scene_rough_asphalt() -> FloorScene:
+    """ถนน/ลานยางมะตอยขรุขระ (หินผสมหยาบ ~2 mm RMS) มีหลุม 4 ใบหลายขนาด + แผ่นปะนูน 1 จุด
+    ไว้ดูว่าเกณฑ์ที่ปรับตามเนื้อผิวยังเจอหลุมจริงโดยไม่กุจุดปลอมบนผิวหยาบ"""
+    return FloorScene(features=[
+        Feature('pothole', x=0.55, y=0.25, depth_mm=-30.0, radius_m=0.10),
+        Feature('pothole', x=0.80, y=-0.20, depth_mm=-18.0, radius_m=0.07),
+        Feature('pothole', x=0.95, y=0.32, depth_mm=-12.0, radius_m=0.06),
+        Feature('pothole', x=0.45, y=-0.35, depth_mm=-25.0, radius_m=0.08, sharp=True),
+        Feature('bump', x=0.70, y=0.02, depth_mm=10.0, radius_m=0.09),
+    ], roughness_mm=2.0, roughness_scale_m=0.03, seed=3, base_bgr=(78, 80, 84))
+
+
+def scene_worn_concrete() -> FloorScene:
+    """พื้นคอนกรีตสึกกร่อน (ผิวหยาบ ~1 mm) มีหลุมลึก 22 / 14 / 9 mm — ตั้งใจให้มีหลุมตื้น
+    ใกล้ขีดจำกัดของกล้อง เพื่อดูว่าระบบวัดต่ำกว่าจริงแค่ไหน"""
+    return FloorScene(features=[
+        Feature('pothole', x=0.50, y=-0.10, depth_mm=-22.0, radius_m=0.09, sharp=True),
+        Feature('pothole', x=0.78, y=0.28, depth_mm=-14.0, radius_m=0.07),
+        Feature('pothole', x=0.92, y=-0.30, depth_mm=-9.0, radius_m=0.06),
+    ], roughness_mm=1.0, roughness_scale_m=0.04, seed=5, base_bgr=(128, 126, 122))
+
+
 SCENES = {
     'flat': scene_flat,
     'targets': scene_calibration_targets,
     'warehouse': scene_warehouse,
+    'asphalt': scene_rough_asphalt,
+    'worn': scene_worn_concrete,
 }
